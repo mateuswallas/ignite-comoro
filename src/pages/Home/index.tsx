@@ -1,17 +1,55 @@
-import { Play } from "phosphor-react";
+import { Play, Watch } from "phosphor-react";
 import { CountdownContainer, FormContainer, HomeContainer, MinutesAmountIput, Separator, StartCountdownButton, TaskInput } from "./styles";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as zod  from "zod";
+
+const newCycleFormValidationSchema = zod.object({
+  task: zod
+  .string()
+  .min(1, 'Infome a tarefa')
+  .regex(
+    /^(?=.*[a-zA-Z])(?!^\d+$)(?!^[^\w\s]+$).+$/,
+    'A tarefa deve conter letras e pode conter números, mas não pode ser apenas números ou caracteres especiais'
+  ),
+  
+  minutesAmount: zod.number().min(5).max(60),
+})
+
+// Tipagem do formulário com base no esquema Zod
+
+type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>;
 
 export function Home() {
+    const { register, handleSubmit, watch, formState: { errors },
+   } = useForm<NewCycleFormData>({
+      resolver: zodResolver(newCycleFormValidationSchema),
+    })
+
+    function handleCreateNewCycle(data: NewCycleFormData) {
+      console.log('Dados válidos',data)
+    }
+
+    const task = watch('task')
+    const isSubmitDisabled = !task
+
+   
     return (
         <HomeContainer>
-            <form action="">
+            <form onSubmit={handleSubmit(handleCreateNewCycle)} action="">
                 <FormContainer>
+                   {/* Campo "Task" */}
+                  
                   <label htmlFor="task">vou trabalhar em</label>
                   <TaskInput  
                      id="task"
                      list="task-suggestions"
                      placeholder="Dê um nome para seu projeto"
+                     type="text"
+                     {...register('task')}
+                     
                    />
+                   
                    <datalist id="task-suggestions">
                       <option value="projeto 1"/>
                       <option value="projeto 2"/>
@@ -19,13 +57,34 @@ export function Home() {
                       <option value="qualquer"/>
                    </datalist>
 
+                   {/* Exibição do erro de task */}
+                   {errors.task && (
+                     <p style={{ color: 'red', fontSize: '0.875rem' }}>
+                     {errors.task.message}
+                     </p>
+                    )}
 
-                  <label htmlFor="minutesAmount">durante</label>
+                   {/* Campo "Minutes" */}
+                  <label htmlFor="minutesAmount">Durante</label>
                   <MinutesAmountIput
-                    type="number" id="minutesAmount"
-                    placeholder="00" />    
-            
-                  <span>minutos.</span>
+                    type="number" 
+                    id="minutesAmount"
+                    placeholder="00"
+                    step={5}
+                    min={5}
+                    max={60}
+                    {...register('minutesAmount', {valueAsNumber: true})}
+                    />    
+                    <span>minutos.</span>
+
+                    {/* Exibição do erro de minutes */}
+                   
+                    {errors.minutesAmount && (
+                       <p style={{ color: 'red', fontSize: '0.875rem' }}>
+                         {errors.minutesAmount.message}
+                       </p>
+                    )}
+                
                 </FormContainer>
 
             <CountdownContainer>
@@ -36,7 +95,7 @@ export function Home() {
               <span>0</span>
             </CountdownContainer>
 
-            <StartCountdownButton disabled type="submit">
+            <StartCountdownButton disabled={isSubmitDisabled} type="submit">
                 <Play size={24} />
                 começar
             </StartCountdownButton>
